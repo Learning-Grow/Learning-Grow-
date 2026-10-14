@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admin Gmail (must match ADMIN_EMAIL in config.js)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "thiran.anujitha07@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+    match /users/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if isAdmin();
+    }
+    match /site/{doc} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /sets/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.t is string && request.resource.data.t.size() < 80
+        && request.resource.data.k is string && request.resource.data.k.size() < 600;
+      allow delete: if isAdmin();
+      allow update: if false;
+    }
+  }
+}
